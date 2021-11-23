@@ -23,6 +23,7 @@ def make_packet_payload_type(type_name, arg):
 
 ushort = make_packet_payload_type('ushort', '<H')
 byte = make_packet_payload_type('byte', '<B')
+uint = make_packet_payload_type('uint', '<I')
 
 
 T = TypeVar('T')
@@ -43,7 +44,9 @@ class PacketMgrBase(metaclass=ABCMeta):
         from io import BytesIO
         with BytesIO() as s:
             for payload, payload_type in args:
-                if payload_type in (int, float):
+                if payload_type is bytes:
+                    s.write(payload)
+                elif payload_type in (int, float):
                     s.write(struct.pack('<' + {
                         int: 'i',
                         float: 'f',
@@ -60,17 +63,17 @@ class PacketMgrBase(metaclass=ABCMeta):
 class PacketSender:
     __slots__: List[Text] = ['__packet_type_id', '__func']
     __sender = Callable[..., None]
-    __current_type_ids: Dict[Text, int] = {}
+    __current_type_ids: Dict[Text, Tuple[int, int]] = {}
 
     @overload
-    def __init__(self, packet_type_id: int = None): pass
+    def __init__(self, packet_type_id: Tuple[int, int] = None): pass
 
     @overload
     def __init__(self, func: __sender): pass
 
     def __init__(self, arg=None):
-        if arg is None or type(arg) is int:
-            self.__packet_type_id = arg
+        if arg is None or type(arg) is tuple:
+            self.__packet_type_id = tuple(map(int, arg))
             pass
         elif callable(arg):  # 这里直接确定当前的packet_id
             self.__packet_type_id = self.__get_and_inc_current_type_id(cast(Any, arg))
@@ -86,7 +89,9 @@ class PacketSender:
         if self.__packet_type_id is None:
             self.__packet_type_id = self.__get_and_inc_current_type_id(func)
         else:
-            self.__set_current_type_id(func, self.__packet_type_id + 1)
+            next_id = (self.__packet_type_id[0], self.__packet_type_id[1] + 1)
+
+            self.__set_current_type_id(func, next_id)
         return lambda *args, **kwargs: self.__send_packet(*args, **kwargs)
 
     def __send_packet(self, *args, **kwargs):
@@ -101,9 +106,10 @@ class PacketSender:
     def __get_and_inc_current_type_id(cls, func):
         obj_unique_prefix = cls.__get_func_unique_prefix(func)
         if obj_unique_prefix not in cls.__current_type_ids.keys():
-            cls.__current_type_ids[obj_unique_prefix] = 0
+            cls.__current_type_ids[obj_unique_prefix] = (0, 0)
         current_type_id = cls.__current_type_ids[obj_unique_prefix]
-        cls.__current_type_ids[obj_unique_prefix] += 1
+        prev_id = cls.__current_type_ids[obj_unique_prefix]
+        cls.__current_type_ids[obj_unique_prefix] = (prev_id[0], prev_id[1] + 1)
         return current_type_id
 
     @classmethod
