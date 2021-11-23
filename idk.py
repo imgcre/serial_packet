@@ -61,7 +61,6 @@ class MySerialPacketMgr(PacketMgrBase):
         TAIL = (0x45, byte)
         CRC = (0xffffffff, uint)
         with BytesIO() as s:
-            print(TARGET, ACTION)
             s.write(self.build_payload(HEADER, VERSION, TARGET, ACTION))
             data = self.build_payload(*args)
             data_len = len(data)
