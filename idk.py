@@ -53,6 +53,9 @@ class MySerialPacketMgr(PacketMgrBase):
     @PacketSender((Target.F, 0x12))
     def flash_read_page(self, addr: uint, len: uint): pass
 
+    @PacketSender((Target.I, 0x13))
+    def eeprom_write_burst(self, addr: uint, data: p32bytes): pass
+
     def build_packet(self, packet_id, *args):
         from io import BytesIO
         HEADER = (0x4e, byte)

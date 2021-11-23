@@ -25,6 +25,8 @@ ushort = make_packet_payload_type('ushort', '<H')
 byte = make_packet_payload_type('byte', '<B')
 uint = make_packet_payload_type('uint', '<I')
 
+p32bytes = make_packet_payload_type('p32bytes', lambda p: struct.pack('<I', len(p)) + p)
+
 
 T = TypeVar('T')
 PayloadInfo = Tuple[T, Type[T]]
