@@ -9,6 +9,8 @@ class Target(IntEnum):
     F = 0x01
     I = 0x02
     C = 0x03
+    S = 0x04
+    B = 0x05
 
 class MySerialPacketMgr(PacketMgrBase):
     def __init__(self):
